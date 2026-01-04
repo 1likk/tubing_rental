@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Тюбинги{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Тюбинги</h1>
+    <p>Управление инвентарем</p>
+</div>
+
+<div class="tubing-compact-grid">
+    {% for item in tubings_with_sessions %}
+    {% with tubing=item.tubing session=item.session %}
+    <div class="tubing-compact-card {% if tubing.status == 'available' %}available{% elif tubing.status == 'busy' %}busy{% else %}broken{% endif %}"
+         data-tubing-id="{{ tubing.id }}"
+         {% if session %}data-start-time="{{ session.start_time.isoformat }}"{% endif %}>
+        
+        <div class="tubing-number">№{{ tubing.number }}</div>
+        
+        {% if session %}
+        <div class="tubing-guest">{{ session.guest_name }}</div>
+        <div class="tubing-timer" id="timer-{{ tubing.id }}">00:00:00</div>
+        {% else %}
+        <div class="tubing-status-text">{{ tubing.get_status_display }}</div>
+        {% endif %}
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="empty-state">
+        <p>Тюбинги не найдены. Добавьте их через админ-панель.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+// Таймеры в реальном времени
+function updateTimers() {
+    const now = new Date();
+    
+    document.querySelectorAll('.tubing-compact-card[data-start-time]').forEach(card => {
+        const startTime = new Date(card.dataset.startTime);
+        const elapsed = Math.floor((now - startTime) / 1000); // секунды
+        
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        const tubingId = card.dataset.tubingId;
+        const timerElement = document.getElementById(`timer-${tubingId}`);
+        
+        if (timerElement) {
+            timerElement.textContent = timeString;
+            
+            // Подсветка по времени
+            timerElement.classList.remove('warning', 'danger');
+            if (elapsed > 3600) { // > 60 минут
+                timerElement.classList.add('danger');
+            } else if (elapsed > 2700) { // > 45 минут
+                timerElement.classList.add('warning');
+            }
+        }
+    });
+}
+
+// Обновляем каждую секунду
+setInterval(updateTimers, 1000);
+updateTimers(); // Первый запуск сразу
+</script>
+{% endblock %}

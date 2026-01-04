@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Тюбинги{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Тюбинги</h1>
+    <p>Управление инвентарем</p>
+</div>
+
+<div class="tubing-compact-grid">
+    {% for item in tubings_with_sessions %}
+    {% with tubing=item.tubing session=item.session %}
+    <div class="tubing-compact-card {% if tubing.status == 'available' %}available{% elif tubing.status == 'busy' %}busy{% else %}broken{% endif %}"
+         data-tubing-id="{{ tubing.id }}"
+         {% if session %}data-session-id="{{ session.id }}" data-start-time="{{ session.start_time.isoformat }}"{% endif %}>
+        
+        <div class="tubing-number">№{{ tubing.number }}</div>
+        
+        {% if session %}
+        <div class="tubing-guest">{{ session.guest_name }}</div>
+        <div class="tubing-timer" id="timer-{{ tubing.id }}">00:00:00</div>
+        <button class="btn-end" onclick="endRental({{ session.id }}, {{ tubing.id }})">Завершить</button>
+        {% elif tubing.status == 'available' %}
+        <div class="tubing-status-text">{{ tubing.get_status_display }}</div>
+        <button class="btn-start" onclick="openStartModal({{ tubing.id }}, {{ tubing.number }})">Старт</button>
+        {% else %}
+        <div class="tubing-status-text">{{ tubing.get_status_display }}</div>
+        {% endif %}
+    </div>
+    {% endwith %}
+    {% empty %}
+    <div class="empty-state">
+        <p>Тюбинги не найдены. Добавьте их через админ-панель.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Модальное окно для старта аренды -->
+<div id="startModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeStartModal()">&times;</span>
+        <h2>Начать аренду</h2>
+        <p>Тюбинг № <span id="modalTubingNumber"></span></p>
+        <form id="startForm" onsubmit="return false;">
+            <input type="hidden" id="tubingId" name="tubing_id">
+            <div class="form-group">
+                <label for="guestName">Имя гостя:</label>
+                <input type="text" id="guestName" name="guest_name" required autocomplete="off">
+            </div>
+            <button type="submit" class="btn-primary" onclick="startRental()">Запустить</button>
+        </form>
+    </div>
+</div>
+
+<!-- Модальное окно результата -->
+<div id="resultModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeResultModal()">&times;</span>
+        <h2>Аренда завершена</h2>
+        <div id="resultContent"></div>
+        <button class="btn-primary" onclick="closeResultModal()">OK</button>
+    </div>
+</div>
+<script>
+// CSRF токен для Django
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Модальное окно для старта
+function openStartModal(tubingId, tubingNumber) {
+    document.getElementById('tubingId').value = tubingId;
+    document.getElementById('modalTubingNumber').textContent = tubingNumber;
+    document.getElementById('guestName').value = '';
+    document.getElementById('startModal').style.display = 'block';
+    document.getElementById('guestName').focus();
+}
+
+function closeStartModal() {
+    document.getElementById('startModal').style.display = 'none';
+}
+
+// Старт аренды
+function startRental() {
+    const tubingId = document.getElementById('tubingId').value;
+    const guestName = document.getElementById('guestName').value.trim();
+    
+    if (!guestName) {
+        alert('Введите имя гостя');
+        return;
+    }
+    
+    fetch(`/rentals/start/${tubingId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrftoken
+        },
+        body: `guest_name=${encodeURIComponent(guestName)}`
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeStartModal();
+            location.reload();
+        } else {
+            alert(data.error || 'Ошибка при запуске аренды');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при запуске аренды');
+    });
+}
+
+// Завершение аренды
+function endRental(sessionId, tubingId) {
+    if (!confirm('Завершить аренду?')) {
+        return;
+    }
+    
+    fetch(`/rentals/end/${sessionId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult(data);
+        } else {
+            alert('Ошибка при завершении аренды');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при завершении аренды');
+    });
+}
+
+// Показать результат
+function showResult(data) {
+    const duration = data.duration;
+    const timeStr = `${duration.hours}ч ${duration.minutes}м ${duration.seconds}с`;
+    
+    const resultHtml = `
+        <p><strong>Время аренды:</strong> ${timeStr}</p>
+        <div class="result-price">${data.final_cost} ₸</div>
+        <p style="text-align: center; color: #86868b;">К оплате</p>
+    `;
+    
+    document.getElementById('resultContent').innerHTML = resultHtml;
+    document.getElementById('resultModal').style.display = 'block';
+}
+
+function closeResultModal() {
+    document.getElementById('resultModal').style.display = 'none';
+    location.reload();
+}
+
+// Закрытие по клику вне модального окна
+window.onclick = function(event) {
+    const startModal = document.getElementById('startModal');
+    const resultModal = document.getElementById('resultModal');
+    if (event.target == startModal) {
+        closeStartModal();
+    }
+    if (event.target == resultModal) {
+        closeResultModal();
+    }
+}
+
+// Таймеры в реальном времени
+function updateTimers() {
+    const now = new Date();
+    
+    document.querySelectorAll('.tubing-compact-card[data-start-time]').forEach(card => {
+        const startTime = new Date(card.dataset.startTime);
+        const elapsed = Math.floor((now - startTime) / 1000);
+        
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        const tubingId = card.dataset.tubingId;
+        const timerElement = document.getElementById(`timer-${tubingId}`);
+        
+        if (timerElement) {
+            timerElement.textContent = timeString;
+            
+            timerElement.classList.remove('warning', 'danger');
+            if (elapsed > 3600) {
+                timerElement.classList.add('danger');
+            } else if (elapsed > 2700) {
+                timerElement.classList.add('warning');
+            }
+        }
+    });
+}
+
+setInterval(updateTimers, 1000);
+updateTimers();
+</script>
+{% endblock content %}
