@@ -21,10 +21,10 @@
         {% if session %}
         <div class="tubing-guest">{{ session.guest_name }}</div>
         <div class="tubing-timer" id="timer-{{ tubing.id }}">00:00:00</div>
-        <button class="btn-end" onclick="endRental({{ session.id }}, {{ tubing.id }})">Завершить</button>
+        <button class="btn-end" data-session-id="{{ session.id }}" data-tubing-id="{{ tubing.id }}">Завершить</button>
         {% elif tubing.status == 'available' %}
         <div class="tubing-status-text">{{ tubing.get_status_display }}</div>
-        <button class="btn-start" onclick="openStartModal({{ tubing.id }}, {{ tubing.number }})">Старт</button>
+        <button class="btn-start" data-tubing-id="{{ tubing.id }}" data-tubing-number="{{ tubing.number }}">Старт</button>
         {% else %}
         <div class="tubing-status-text">{{ tubing.get_status_display }}</div>
         {% endif %}
@@ -81,6 +81,27 @@ function getCookie(name) {
 }
 
 const csrftoken = getCookie('csrftoken');
+
+// Обработчики событий для кнопок
+document.addEventListener('DOMContentLoaded', function() {
+    // Кнопки "Старт"
+    document.querySelectorAll('.btn-start').forEach(button => {
+        button.addEventListener('click', function() {
+            const tubingId = this.dataset.tubingId;
+            const tubingNumber = this.dataset.tubingNumber;
+            openStartModal(tubingId, tubingNumber);
+        });
+    });
+    
+    // Кнопки "Завершить"
+    document.querySelectorAll('.btn-end').forEach(button => {
+        button.addEventListener('click', function() {
+            const sessionId = this.dataset.sessionId;
+            const tubingId = this.dataset.tubingId;
+            endRental(sessionId, tubingId);
+        });
+    });
+});
 
 // Модальное окно для старта
 function openStartModal(tubingId, tubingNumber) {

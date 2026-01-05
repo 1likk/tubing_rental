@@ -6,10 +6,152 @@
 {% block content %}
 <div class="page-header">
     <h1>Финансы</h1>
-    <p>Отчеты и статистика</p>
+    <p>Отчёты и статистика доходов</p>
 </div>
 
-<div class="empty-state">
-    <p>Раздел в разработке</p>
+<div class="finance-stats-grid">
+    <div class="finance-stat-card">
+        <div class="stat-info">
+            <p class="stat-label">Общий доход</p>
+            <h2 class="stat-number">{{ total_revenue|floatformat:0 }} ₸</h2>
+        </div>
+        <div class="stat-icon-wrapper green">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-goal-icon lucide-goal">
+                <path d="M12 13V2l8 4-8 4"/>
+                <path d="M20.561 10.222a9 9 0 1 1-12.55-5.29"/>
+                <path d="M8.002 9.997a5 5 0 1 0 8.9 2.02"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="finance-stat-card">
+        <div class="stat-info">
+            <p class="stat-label">Количество аренд</p>
+            <h2 class="stat-number">{{ total_count }}</h2>
+        </div>
+        <div class="stat-icon-wrapper blue">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-command-icon lucide-command">
+                <path d="M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3"/>
+            </svg>
+        </div>
+    </div>
+    
+    <div class="finance-stat-card">
+        <div class="stat-info">
+            <p class="stat-label">Средний чек </p>
+            <h2 class="stat-number">{{ avg_check|floatformat:0 }} ₸</h2>
+        </div>
+        <div class="stat-icon-wrapper yellow">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-notebook-pen-icon lucide-notebook-pen">
+                <path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4"/>
+                <path d="M2 6h4"/>
+                <path d="M2 10h4"/>
+                <path d="M2 14h4"/>
+                <path d="M2 18h4"/>
+                <path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z"/>
+            </svg>
+        </div>
+    </div>
 </div>
+
+<div class="chart-card">
+    <div class="chart-card-header">
+        <h3>Динамика доходов</h3>
+        <div class="chart-tabs">
+            <button class="chart-tab active">По дням</button>
+            <button class="chart-tab">По месяцам</button>
+        </div>
+    </div>
+    <div class="chart-wrapper">
+        <canvas id="revenueChart"></canvas>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ labels|safe }},
+            datasets: [{
+                label: 'Выручка',
+                data: {{ chart_data|safe }},
+                borderColor: '#3b82f6',
+                backgroundColor: 'transparent',
+                fill: false,
+                tension: 0.4,
+                borderWidth: 2,
+                pointRadius: 4,
+                pointBackgroundColor: '#3b82f6',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#3b82f6',
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 2
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    backgroundColor: '#fff',
+                    titleColor: '#1d1d1f',
+                    bodyColor: '#1d1d1f',
+                    borderColor: '#e5e5e7',
+                    borderWidth: 1,
+                    padding: 12,
+                    displayColors: false,
+                    titleFont: {
+                        size: 13,
+                        weight: '600'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    callbacks: {
+                        label: function(context) {
+                            return context.parsed.y.toFixed(0) + ' ₽';
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    grid: {
+                        color: '#f0f0f0',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        color: '#86868b',
+                        padding: 10
+                    }
+                },
+                x: {
+                    grid: {
+                        color: '#f0f0f0',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 12
+                        },
+                        color: '#86868b',
+                        padding: 10
+                    }
+                }
+            }
+        }
+    });
+</script>
 {% endblock content %}
