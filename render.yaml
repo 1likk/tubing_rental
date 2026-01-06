@@ -2,11 +2,13 @@ databases:
   - name: tubing-rental-db
     databaseName: tubing_rental
     user: tubing_rental
+    plan: free
 
 services:
   - type: web
     name: tubing-rental
     runtime: python
+    plan: free
     buildCommand: "./build.sh"
     startCommand: "gunicorn tubing_rental.wsgi:application"
     envVars:
