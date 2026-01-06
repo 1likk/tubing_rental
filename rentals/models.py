@@ -29,6 +29,7 @@ class RentalSession(models.Model):
     
     tubing = models.ForeignKey(Tubing, on_delete=models.PROTECT, verbose_name="Тюбинг")
     guest_name = models.CharField(max_length=100, verbose_name="Имя гостя")
+    phone_number = models.CharField(max_length=20, verbose_name="Номер телефона", blank=True, default="")
     start_time = models.DateTimeField(auto_now_add=True, verbose_name="Время начала")
     end_time = models.DateTimeField(null=True, blank=True, verbose_name="Время окончания")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active', verbose_name="Статус")

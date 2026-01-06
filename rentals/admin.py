@@ -10,7 +10,7 @@ class TubingAdmin(admin.ModelAdmin):
 
 @admin.register(RentalSession)
 class RentalSessionAdmin(admin.ModelAdmin):
-    list_display = ('guest_name', 'tubing', 'start_time', 'end_time', 'status', 'final_cost')
+    list_display = ('guest_name', 'phone_number', 'tubing', 'start_time', 'end_time', 'status', 'final_cost')
     list_filter = ('status', 'start_time')
-    search_fields = ('guest_name', 'tubing__number')
+    search_fields = ('guest_name', 'phone_number', 'tubing__number')
     ordering = ('-start_time',)

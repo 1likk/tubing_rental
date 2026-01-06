@@ -48,9 +48,13 @@ def start_rental(request, tubing_id):
     """Начать аренду тюбинга"""
     tubing = get_object_or_404(Tubing, id=tubing_id)
     guest_name = request.POST.get('guest_name', '').strip()
+    phone_number = request.POST.get('phone_number', '').strip()
     
     if not guest_name:
         return JsonResponse({'success': False, 'error': 'Введите имя гостя'}, status=400)
+    
+    if not phone_number:
+        return JsonResponse({'success': False, 'error': 'Введите номер телефона'}, status=400)
     
     # Проверяем, что тюбинг свободен
     if tubing.status != 'available':
@@ -60,6 +64,7 @@ def start_rental(request, tubing_id):
     session = RentalSession.objects.create(
         tubing=tubing,
         guest_name=guest_name,
+        phone_number=phone_number,
         status='active'
     )
     

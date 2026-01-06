@@ -20,6 +20,7 @@
         
         {% if session %}
         <div class="tubing-guest">{{ session.guest_name }}</div>
+        <div class="tubing-phone">{{ session.phone_number }}</div>
         <div class="tubing-timer" id="timer-{{ tubing.id }}">00:00:00</div>
         <button class="btn-end" data-session-id="{{ session.id }}" data-tubing-id="{{ tubing.id }}">Завершить</button>
         {% elif tubing.status == 'available' %}
@@ -48,6 +49,10 @@
             <div class="form-group">
                 <label for="guestName">Имя гостя:</label>
                 <input type="text" id="guestName" name="guest_name" required autocomplete="off">
+            </div>
+            <div class="form-group">
+                <label for="phoneNumber">Номер телефона:</label>
+                <input type="tel" id="phoneNumber" name="phone_number" placeholder="+7 (___) ___-__-__" required autocomplete="off">
             </div>
             <button type="submit" class="btn-primary" onclick="startRental()">Запустить</button>
         </form>
@@ -108,6 +113,7 @@ function openStartModal(tubingId, tubingNumber) {
     document.getElementById('tubingId').value = tubingId;
     document.getElementById('modalTubingNumber').textContent = tubingNumber;
     document.getElementById('guestName').value = '';
+    document.getElementById('phoneNumber').value = '+7 ';
     document.getElementById('startModal').style.display = 'block';
     document.getElementById('guestName').focus();
 }
@@ -116,13 +122,73 @@ function closeStartModal() {
     document.getElementById('startModal').style.display = 'none';
 }
 
+// Маска для телефона
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('phoneNumber');
+    
+    phoneInput.addEventListener('input', function(e) {
+        let value = e.target.value.replace(/\D/g, '');
+        
+        // Всегда начинаем с +7
+        if (!value.startsWith('7')) {
+            value = '7' + value;
+        }
+        
+        // Ограничиваем длину (7 + 10 цифр)
+        value = value.substring(0, 11);
+        
+        // Форматируем
+        let formatted = '+7 ';
+        if (value.length > 1) {
+            formatted += '(' + value.substring(1, 4);
+        }
+        if (value.length >= 4) {
+            formatted += ') ' + value.substring(4, 7);
+        }
+        if (value.length >= 7) {
+            formatted += '-' + value.substring(7, 9);
+        }
+        if (value.length >= 9) {
+            formatted += '-' + value.substring(9, 11);
+        }
+        
+        e.target.value = formatted;
+    });
+    
+    // Предотвращаем удаление +7
+    phoneInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && e.target.value === '+7 ') {
+            e.preventDefault();
+        }
+    });
+    
+    phoneInput.addEventListener('focus', function(e) {
+        if (e.target.value === '') {
+            e.target.value = '+7 ';
+        }
+    });
+});
+
 // Старт аренды
 function startRental() {
     const tubingId = document.getElementById('tubingId').value;
     const guestName = document.getElementById('guestName').value.trim();
+    const phoneNumber = document.getElementById('phoneNumber').value.trim();
     
     if (!guestName) {
         alert('Введите имя гостя');
+        return;
+    }
+    
+    if (!phoneNumber || phoneNumber === '+7 ') {
+        alert('Введите номер телефона');
+        return;
+    }
+    
+    // Проверяем длину номера
+    const digitsOnly = phoneNumber.replace(/\D/g, '');
+    if (digitsOnly.length !== 11) {
+        alert('Введите полный номер телефона');
         return;
     }
     
@@ -132,7 +198,7 @@ function startRental() {
             'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': csrftoken
         },
-        body: `guest_name=${encodeURIComponent(guestName)}`
+        body: `guest_name=${encodeURIComponent(guestName)}&phone_number=${encodeURIComponent(phoneNumber)}`
     })
     .then(response => response.json())
     .then(data => {
