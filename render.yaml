@@ -3,14 +3,16 @@ databases:
     databaseName: tubing_rental
     user: tubing_rental
     plan: free
+    region: oregon
 
 services:
   - type: web
     name: tubing-rental
     runtime: python
     plan: free
-    buildCommand: "./build.sh"
-    startCommand: "gunicorn tubing_rental.wsgi:application"
+    region: oregon
+    buildCommand: "pip install -r requirements.txt && python manage.py collectstatic --no-input && python manage.py migrate"
+    startCommand: "gunicorn tubing_rental.wsgi:application --bind 0.0.0.0:$PORT"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -22,3 +24,5 @@ services:
         value: "False"
       - key: ALLOWED_HOSTS
         value: ".onrender.com"
+      - key: PYTHON_VERSION
+        value: "3.12.0"
