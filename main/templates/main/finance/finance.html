@@ -67,91 +67,9 @@
     </div>
 </div>
 
+{{ labels|json_script:"labels-data" }}
+{{ chart_data|json_script:"chart-data" }}
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ labels|safe }},
-            datasets: [{
-                label: 'Выручка',
-                data: {{ chart_data|safe }},
-                borderColor: '#3b82f6',
-                backgroundColor: 'transparent',
-                fill: false,
-                tension: 0.4,
-                borderWidth: 2,
-                pointRadius: 4,
-                pointBackgroundColor: '#3b82f6',
-                pointBorderColor: '#fff',
-                pointBorderWidth: 2,
-                pointHoverRadius: 6,
-                pointHoverBackgroundColor: '#3b82f6',
-                pointHoverBorderColor: '#fff',
-                pointHoverBorderWidth: 2
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                tooltip: {
-                    backgroundColor: '#fff',
-                    titleColor: '#1d1d1f',
-                    bodyColor: '#1d1d1f',
-                    borderColor: '#e5e5e7',
-                    borderWidth: 1,
-                    padding: 12,
-                    displayColors: false,
-                    titleFont: {
-                        size: 13,
-                        weight: '600'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    callbacks: {
-                        label: function(context) {
-                            return context.parsed.y.toFixed(0) + ' ₽';
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: {
-                        color: '#f0f0f0',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        },
-                        color: '#86868b',
-                        padding: 10
-                    }
-                },
-                x: {
-                    grid: {
-                        color: '#f0f0f0',
-                        drawBorder: false
-                    },
-                    ticks: {
-                        font: {
-                            size: 12
-                        },
-                        color: '#86868b',
-                        padding: 10
-                    }
-                }
-            }
-        }
-    });
-</script>
+<script src="{% static 'js/main.js' %}"></script>
 {% endblock content %}

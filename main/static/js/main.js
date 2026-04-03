@@ -1,0 +1,325 @@
+document.addEventListener('DOMContentLoaded', function() {
+    // Finance Chart
+    const revenueChartEl = document.getElementById('revenueChart');
+    if (revenueChartEl) {
+        const labelsDataEl = document.getElementById('labels-data');
+        const chartDataEl = document.getElementById('chart-data');
+        
+        if (labelsDataEl && chartDataEl) {
+            const labelsData = JSON.parse(labelsDataEl.textContent);
+            const chartData = JSON.parse(chartDataEl.textContent);
+            
+            const ctx = revenueChartEl.getContext('2d');
+            
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labelsData,
+                    datasets: [{
+                        label: 'Выручка',
+                        data: chartData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'transparent',
+                        fill: false,
+                        tension: 0.4,
+                        borderWidth: 2,
+                        pointRadius: 4,
+                        pointBackgroundColor: '#3b82f6',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 2,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#3b82f6',
+                        pointHoverBorderColor: '#fff',
+                        pointHoverBorderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#fff',
+                            titleColor: '#1d1d1f',
+                            bodyColor: '#1d1d1f',
+                            borderColor: '#e5e5e7',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: false,
+                            titleFont: {
+                                size: 13,
+                                weight: '600'
+                            },
+                            bodyFont: {
+                                size: 13
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return context.parsed.y.toFixed(0) + ' ₸';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: {
+                                color: '#f0f0f0',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#86868b',
+                                padding: 10
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: '#f0f0f0',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    size: 12
+                                },
+                                color: '#86868b',
+                                padding: 10
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+});
+
+const csrftoken = getCookie('csrftoken');
+
+// Обработчики событий для кнопок
+document.addEventListener('DOMContentLoaded', function() {
+});
+
+// Модальное окно для старта
+function openStartModal(tubingId, tubingNumber) {
+    const tubingIdInput = document.getElementById('tubingId');
+    if (tubingIdInput) {
+        tubingIdInput.value = tubingId;
+    }
+    const modalTubingNumber = document.getElementById('modalTubingNumber');
+    if (modalTubingNumber) {
+        modalTubingNumber.textContent = tubingNumber;
+    }
+    const guestNameInput = document.getElementById('guestName');
+    if (guestNameInput) {
+        guestNameInput.value = '';
+    }
+    const phoneNumberInput = document.getElementById('phoneNumber');
+    if (phoneNumberInput) {
+        phoneNumberInput.value = '+7 ';
+    }
+    const startModal = document.getElementById('startModal');
+    if (startModal) {
+        startModal.style.display = 'block';
+    }
+    if (guestNameInput) {
+        guestNameInput.focus();
+    }
+}
+
+function closeStartModal() {
+    const startModal = document.getElementById('startModal');
+    if (startModal) {
+        startModal.style.display = 'none';
+    }
+}
+
+// Маска для телефона
+document.addEventListener('DOMContentLoaded', function() {
+    const phoneInput = document.getElementById('phoneNumber');
+    if (!phoneInput) return;
+    
+    phoneInput.addEventListener('input', function(e) {
+        const value = e.target.value.replace(/\D/g, '');
+        let formattedValue = '';
+        
+        if (value.length > 0) {
+            formattedValue += '+7 ';
+        }
+        if (value.length > 2) {
+            formattedValue += '(' + value.substring(2, 5);
+        }
+        if (value.length >= 5) {
+            formattedValue += ') ' + value.substring(5, 8);
+        }
+        if (value.length >= 8) {
+            formattedValue += '-' + value.substring(8, 10);
+        }
+        if (value.length >= 10) {
+            formattedValue += '-' + value.substring(10, 12);
+        }
+        
+        e.target.value = formattedValue;
+    });
+    
+    phoneInput.addEventListener('focus', function(e) {
+        if (e.target.value === '') {
+            e.target.value = '+7 ';
+        }
+    });
+});
+
+// Старт аренды
+window.startRental = function() {
+    const tubingIdInput = document.getElementById('tubingId');
+    const guestNameInput = document.getElementById('guestName');
+    const phoneNumberInput = document.getElementById('phoneNumber');
+    
+    if (!tubingIdInput || !guestNameInput || !phoneNumberInput) return;
+    
+    const tubingId = tubingIdInput.value;
+    const guestName = guestNameInput.value.trim();
+    const phoneNumber = phoneNumberInput.value.trim();
+    
+    if (!guestName) {
+        alert('Введите имя гостя');
+        return;
+    }
+    
+    if (phoneNumber.length < 10) {
+        alert('Введите корректный номер телефона');
+        return;
+    }
+    
+    fetch(`/rentals/start/${tubingId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        body: JSON.stringify({
+            guest_name: guestName,
+            phone_number: phoneNumber
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeStartModal();
+            location.reload();
+        } else {
+            alert(data.error || 'Ошибка при запуске аренды');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при запуске аренды');
+    });
+}
+
+// Завершение аренды
+window.endRental = function(sessionId, tubingId) {
+    if (!confirm('Завершить аренду?')) {
+        return;
+    }
+    
+    fetch(`/rentals/end/${sessionId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showResult(data);
+        } else {
+            alert('Ошибка при завершении аренды');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Ошибка при завершении аренды');
+    });
+}
+
+// Показать результат
+function showResult(data) {
+    const duration = data.duration;
+    const timeStr = `${duration.hours}ч ${duration.minutes}м ${duration.seconds}с`;
+    
+    const resultHtml = `
+        <p><strong>Время аренды:</strong> ${timeStr}</p>
+        <div class="result-price">${data.final_cost} ₸</div>
+        <p style="text-align: center; color: #86868b;">К оплате</p>
+    `;
+    
+    const resultContent = document.getElementById('resultContent');
+    if (resultContent) {
+        resultContent.innerHTML = resultHtml;
+    }
+    
+    const resultModal = document.getElementById('resultModal');
+    if (resultModal) {
+        resultModal.style.display = 'block';
+    }
+}
+
+window.closeResultModal = function() {
+    const resultModal = document.getElementById('resultModal');
+    if (resultModal) {
+        resultModal.style.display = 'none';
+    }
+    location.reload();
+}
+
+window.closeStartModal = closeStartModal;
+
+// Закрытие по клику вне модального окна
+window.onclick = function(event) {
+    const startModal = document.getElementById('startModal');
+    const resultModal = document.getElementById('resultModal');
+    if (startModal && event.target == startModal) {
+        closeStartModal();
+    }
+    if (resultModal && event.target == resultModal) {
+        closeResultModal();
+    }
+}
+
+// Таймеры в реальном времени
+function updateTimers() {
+    document.querySelectorAll('.tubing-compact-card[data-start-time]').forEach(card => {
+        const startTime = parseInt(card.dataset.startTime);
+        const currentTime = Math.floor(Date.now() / 1000);
+        const elapsed = currentTime - startTime;
+        
+        const hours = Math.floor(elapsed / 3600);
+        const minutes = Math.floor((elapsed % 3600) / 60);
+        const seconds = elapsed % 60;
+        
+        const timeString = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        
+        const tubingId = card.dataset.tubingId;
+        const timerElement = document.getElementById(`timer-${tubingId}`);
+        
+        if (timerElement) {
+            timerElement.textContent = timeString;
+            timerElement.classList.remove('warning', 'danger');
+            if (elapsed > 3600) {
+                timerElement.classList.add('danger');
+            } else if (elapsed > 2700) {
+                timerElement.classList.add('warning');
+            }
+        }
+    });
+}
+
+if (document.querySelectorAll('.tubing-compact-card[data-start-time]').length > 0) {
+    setInterval(updateTimers, 1000);
+    updateTimers();
+}
