@@ -7,17 +7,14 @@ from datetime import timedelta, datetime
 
 
 def finance_overview(request):
-    # Получаем только завершенные сессии аренды
     completed_rentals = RentalSession.objects.filter(status='completed')
     
-    # Статистика: общая выручка, количество аренд, средний чек
     stats = completed_rentals.aggregate(
         total_revenue=Sum('final_cost'),
         total_count=Count('id'),
         avg_check=Avg('final_cost')
     )
     
-    # Данные за последние 7 дней для графика
     last_week = timezone.now() - timedelta(days=7)
     daily_data = (
         completed_rentals.filter(end_time__gte=last_week)

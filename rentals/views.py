@@ -56,11 +56,9 @@ def start_rental(request, tubing_id):
     if not phone_number:
         return JsonResponse({'success': False, 'error': 'Введите номер телефона'}, status=400)
     
-    # Проверяем, что тюбинг свободен
     if tubing.status != 'available':
         return JsonResponse({'success': False, 'error': 'Тюбинг занят'}, status=400)
     
-    # Создаем сессию
     session = RentalSession.objects.create(
         tubing=tubing,
         guest_name=guest_name,
@@ -68,7 +66,6 @@ def start_rental(request, tubing_id):
         status='active'
     )
     
-    # Обновляем статус тюбинга
     tubing.status = 'busy'
     tubing.save()
     
@@ -84,21 +81,17 @@ def end_rental(request, session_id):
     """Завершить аренду и рассчитать сумму"""
     session = get_object_or_404(RentalSession, id=session_id, status='active')
     
-    # Рассчитываем стоимость
     final_cost = calculate_rental_price(session.start_time)
     
-    # Обновляем сессию
     session.end_time = timezone.now()
     session.final_cost = final_cost
     session.status = 'completed'
     session.save()
     
-    # Освобождаем тюбинг
     tubing = session.tubing
     tubing.status = 'available'
     tubing.save()
     
-    # Вычисляем время аренды
     duration = session.end_time - session.start_time
     total_seconds = int(duration.total_seconds())
     hours = total_seconds // 3600

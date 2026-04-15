@@ -5,15 +5,12 @@ from django.utils import timezone
 from datetime import datetime
 
 def dashboard(request):
-    # Количество активных аренд
     active_rentals_count = RentalSession.objects.filter(status="active").count()
 
-    # Статистика инвентаря
     total_tubings = Tubing.objects.count()
     available_tubings = Tubing.objects.filter(status="available").count()
     inventory_stats = f"{available_tubings} / {total_tubings}"
 
-    # Выручка за сегодня
     today = timezone.now().date()
     today_revenue_data = RentalSession.objects.filter(
         status="completed",
@@ -21,7 +18,7 @@ def dashboard(request):
     ).aggregate(total=Sum('final_cost'))
     today_revenue = today_revenue_data['total'] or 0
 
-    # Выручка за текущий месяц
+    
     current_month = timezone.now().month
     current_year = timezone.now().year
     month_revenue_data = RentalSession.objects.filter(
@@ -31,7 +28,6 @@ def dashboard(request):
     ).aggregate(total=Sum('final_cost'))
     month_revenue = month_revenue_data['total'] or 0
 
-    # Последние 5 аренд
     latest_rentals = RentalSession.objects.all().order_by('-start_time')[:5]
 
     context = {
