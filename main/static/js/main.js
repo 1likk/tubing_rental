@@ -97,10 +97,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 const csrftoken = getCookie('csrftoken');
 
-// Обработчики событий для кнопок
+
 document.addEventListener('DOMContentLoaded', function() {
+    // Кнопки Старт
+    document.querySelectorAll('.btn-start').forEach(button => {
+        button.addEventListener('click', function() {
+            const tubingId = this.dataset.tubingId;
+            const tubingNumber = this.dataset.tubingNumber;
+            openStartModal(tubingId, tubingNumber);
+        });
+    });
+    
+    // Кнопки Завершить
+    document.querySelectorAll('.btn-end').forEach(button => {
+        button.addEventListener('click', function() {
+            const sessionId = this.dataset.sessionId;
+            const tubingId = this.dataset.tubingId;
+            endRental(sessionId, tubingId);
+        });
+    });
 });
 
 // Модальное окно для старта
@@ -143,26 +175,38 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!phoneInput) return;
     
     phoneInput.addEventListener('input', function(e) {
-        const value = e.target.value.replace(/\D/g, '');
-        let formattedValue = '';
+        let value = e.target.value.replace(/\D/g, '');
         
-        if (value.length > 0) {
-            formattedValue += '+7 ';
-        }
-        if (value.length > 2) {
-            formattedValue += '(' + value.substring(2, 5);
-        }
-        if (value.length >= 5) {
-            formattedValue += ') ' + value.substring(5, 8);
-        }
-        if (value.length >= 8) {
-            formattedValue += '-' + value.substring(8, 10);
-        }
-        if (value.length >= 10) {
-            formattedValue += '-' + value.substring(10, 12);
+        
+        if (!value.startsWith('7')) {
+            value = '7' + value;
         }
         
-        e.target.value = formattedValue;
+        
+        value = value.substring(0, 11);
+        
+        
+        let formatted = '+7 ';
+        if (value.length > 1) {
+            formatted += '(' + value.substring(1, 4);
+        }
+        if (value.length >= 4) {
+            formatted += ') ' + value.substring(4, 7);
+        }
+        if (value.length >= 7) {
+            formatted += '-' + value.substring(7, 9);
+        }
+        if (value.length >= 9) {
+            formatted += '-' + value.substring(9, 11);
+        }
+        
+        e.target.value = formatted;
+    });
+
+    phoneInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && e.target.value === '+7 ') {
+            e.preventDefault();
+        }
     });
     
     phoneInput.addEventListener('focus', function(e) {
@@ -197,13 +241,10 @@ window.startRental = function() {
     fetch(`/rentals/start/${tubingId}/`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/x-www-form-urlencoded',
             'X-CSRFToken': csrftoken
         },
-        body: JSON.stringify({
-            guest_name: guestName,
-            phone_number: phoneNumber
-        })
+        body: `guest_name=${encodeURIComponent(guestName)}&phone_number=${encodeURIComponent(phoneNumber)}`
     })
     .then(response => response.json())
     .then(data => {
@@ -220,7 +261,7 @@ window.startRental = function() {
     });
 }
 
-// Завершение аренды
+
 window.endRental = function(sessionId, tubingId) {
     if (!confirm('Завершить аренду?')) {
         return;
@@ -229,7 +270,6 @@ window.endRental = function(sessionId, tubingId) {
     fetch(`/rentals/end/${sessionId}/`, {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
             'X-CSRFToken': csrftoken
         }
     })
@@ -277,26 +317,13 @@ window.closeResultModal = function() {
     location.reload();
 }
 
-window.closeStartModal = closeStartModal;
-
-// Закрытие по клику вне модального окна
-window.onclick = function(event) {
-    const startModal = document.getElementById('startModal');
-    const resultModal = document.getElementById('resultModal');
-    if (startModal && event.target == startModal) {
-        closeStartModal();
-    }
-    if (resultModal && event.target == resultModal) {
-        closeResultModal();
-    }
-}
-
 // Таймеры в реальном времени
 function updateTimers() {
+    const now = new Date();
+    
     document.querySelectorAll('.tubing-compact-card[data-start-time]').forEach(card => {
-        const startTime = parseInt(card.dataset.startTime);
-        const currentTime = Math.floor(Date.now() / 1000);
-        const elapsed = currentTime - startTime;
+        const startTime = new Date(card.dataset.startTime);
+        const elapsed = Math.floor((now - startTime) / 1000);
         
         const hours = Math.floor(elapsed / 3600);
         const minutes = Math.floor((elapsed % 3600) / 60);
@@ -309,6 +336,7 @@ function updateTimers() {
         
         if (timerElement) {
             timerElement.textContent = timeString;
+            
             timerElement.classList.remove('warning', 'danger');
             if (elapsed > 3600) {
                 timerElement.classList.add('danger');
@@ -319,7 +347,24 @@ function updateTimers() {
     });
 }
 
-if (document.querySelectorAll('.tubing-compact-card[data-start-time]').length > 0) {
-    setInterval(updateTimers, 1000);
-    updateTimers();
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (document.querySelectorAll('.tubing-compact-card[data-start-time]').length > 0) {
+        setInterval(updateTimers, 1000);
+        updateTimers();
+    }
+});
+
+window.closeStartModal = closeStartModal;
+
+
+window.onclick = function(event) {
+    const startModal = document.getElementById('startModal');
+    const resultModal = document.getElementById('resultModal');
+    if (startModal && event.target == startModal) {
+        closeStartModal();
+    }
+    if (resultModal && event.target == resultModal) {
+        closeResultModal();
+    }
 }
